@@ -6,7 +6,8 @@ public class Fermata {
 
 	private int idFermata;
 	private String nome;
-	private LatLng coords;
+	private LatLng coords; //cordinate non sono double ma abbiamo questa classe latLng
+	
 
 	public Fermata(int idFermata, String nome, LatLng coords) {
 		this.idFermata = idFermata;

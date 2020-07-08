@@ -6,9 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.javadocmd.simplelatlng.LatLng;
 
+import it.polito.tdp.metroparis.model.CoppiaFermate;
 import it.polito.tdp.metroparis.model.Fermata;
 import it.polito.tdp.metroparis.model.Linea;
 
@@ -26,7 +28,7 @@ public class MetroDAO {
 
 			while (rs.next()) {
 				Fermata f = new Fermata(rs.getInt("id_Fermata"), rs.getString("nome"),
-						new LatLng(rs.getDouble("coordx"), rs.getDouble("coordy")));
+						new LatLng(rs.getDouble("coordx"), rs.getDouble("coordy"))); //costruisco la latlng
 				fermate.add(f);
 			}
 
@@ -66,6 +68,81 @@ public class MetroDAO {
 		}
 
 		return linee;
+	}
+	public boolean fermateConnesse(Fermata fp, Fermata fa) {
+		String sql= "SELECT COUNT(*) AS C "+
+					"FROM connessione c "+
+					"WHERE c.id_stazP=? AND c.id_stazA=? ";
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			
+			st.setInt(1, fp.getIdFermata());
+			st.setInt(2,fa.getIdFermata());
+			
+			ResultSet res = st.executeQuery();
+			res.first();
+			
+			int linee=res.getInt("C");
+			st.close();
+			conn.close();
+			
+			return (linee>=1);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Errore di connessione al Database.");
+		}
+	}
+	public List<Fermata>fermataSuccessive(Fermata fp, Map<Integer,Fermata>fermataIdMap){
+		String sql= "SELECT DISTINCT c.id_stazA "+
+					"FROM connessione c "+
+					"WHERE c.id_stazP=? ";
+		List<Fermata>result =new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			
+			st.setInt(1, fp.getIdFermata());
+			
+			ResultSet res = st.executeQuery();
+			
+			
+			while(res.next()) {
+				int id_fa=res.getInt("id_stazA"); // ID fermataArrivo
+				result.add(fermataIdMap.get(id_fa));
+				
+				conn.close();
+				
+				
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+				throw new RuntimeException("Errore di connessione al Database.");
+				}
+		return result;
+	}
+
+	public List<CoppiaFermate> coppieFermate(Map<Integer, Fermata> fermataIdMap) {
+		String sql= "SELECT DISTINCT c.id_stazA, c.id_stazP FROM connessione c";
+		List<CoppiaFermate>result =new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			
+			
+			while(res.next()) {
+				CoppiaFermate c= new CoppiaFermate(fermataIdMap.get(res.getInt("id_StazP")),fermataIdMap.get(res.getInt("id_StazA")));
+				result.add(c);
+				
+				}
+			conn.close();
+			
+			} catch (SQLException e) {
+				e.printStackTrace();
+				throw new RuntimeException("Errore di connessione al Database.");
+				}
+		return result;
 	}
 
 
